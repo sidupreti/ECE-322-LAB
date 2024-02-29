@@ -1,3 +1,5 @@
+
+
 /*************************************************************************
  * Copyright (c) 2009 Altera Corporation, San Jose, California, USA.      *
  * All rights reserved. All use of this software and documentation is     *
@@ -383,10 +385,12 @@ int main(void)
     initial_message();
 
 /* Continue 0-ff counting loop. */
+    /* Continue 0-ff counting loop. */
 
-    while( 1 ) 
+
+    while( 1 )
     {
-        usleep(100000);
+        usleep(1000000/3.3);
         if (edge_capture != 0)
         {
             /* Handle button presses while counting... */
@@ -403,6 +407,7 @@ int main(void)
          */
         if( count == target )
         {
+        	count = 0;
             LCD_PRINTF(lcd, "%c%s %c%s %c%s Waiting...\n", ESC, ESC_TOP_LEFT,
                        ESC, ESC_CLEAR, ESC, ESC_COL1_INDENT5);
             printf("\nWaiting...");
@@ -419,7 +424,7 @@ int main(void)
                 LCD_PRINTF(lcd, "%c%s %ds\n", ESC, ESC_COL2_INDENT5,
                     wait_time+1);
 
-                if (edge_capture != 0) 
+                if (edge_capture != 0)
                 {
                     printf( "\nYou pushed:  " );
                     handle_button_press('w', lcd);
