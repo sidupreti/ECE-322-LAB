@@ -1,0 +1,38 @@
+# # File gsaved with Nlview version 6.3.8  2013-12-19 bk=1.2992 VDI=34 GEI=35
+# 
+preplace inst VGA_Subsystem.VGA_Dual_Clock_FIFO -pg 1 -lvl 6 -y 120
+preplace inst VGA_Subsystem.VGA_Alpha_Blender -pg 1 -lvl 5 -y 90
+preplace inst VGA_Subsystem.VGA_Char_Buffer -pg 1 -lvl 4 -y 40
+preplace inst VGA_Subsystem.VGA_Controller -pg 1 -lvl 7 -y 210
+preplace inst VGA_Subsystem.VGA_Pixel_Scaler -pg 1 -lvl 4 -y 200
+preplace inst VGA_Subsystem.Sys_Clk -pg 1 -lvl 1 -y 160
+preplace inst VGA_Subsystem -pg 1 -lvl 1 -y 40 -regy -20
+preplace inst VGA_Subsystem.VGA_PLL.video_pll -pg 1
+preplace inst VGA_Subsystem.VGA_PLL -pg 1 -lvl 5 -y 320
+preplace inst VGA_Subsystem.VGA_PLL.reset_from_locked -pg 1
+preplace inst VGA_Subsystem.VGA_Pixel_RGB_Resampler -pg 1 -lvl 3 -y 180
+preplace inst VGA_Subsystem.VGA_Pixel_DMA -pg 1 -lvl 7 -y 40
+preplace inst VGA_Subsystem.VGA_Pixel_FIFO -pg 1 -lvl 2 -y 130
+preplace netloc FAN_OUT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Dual_Clock_FIFO.reset_stream_out,(SLAVE)VGA_Controller.reset,(MASTER)VGA_PLL.reset_source) 1 5 2 1980 290 2350
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_PLL.ref_reset,(SLAVE)VGA_Subsystem.vga_pll_ref_reset) 1 0 5 NJ 350 NJ 350 NJ 350 NJ 350 NJ
+preplace netloc FAN_OUT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Alpha_Blender.clk,(SLAVE)VGA_Pixel_DMA.clk,(SLAVE)VGA_Pixel_FIFO.clock_stream_in,(SLAVE)VGA_Pixel_FIFO.clock_stream_out,(SLAVE)VGA_Pixel_Scaler.clk,(SLAVE)VGA_Char_Buffer.clk,(SLAVE)VGA_Dual_Clock_FIFO.clock_stream_in,(MASTER)Sys_Clk.clk,(SLAVE)VGA_Pixel_RGB_Resampler.clk) 1 1 6 420 120 770 130 1090 150 1470 200 1880 70 NJ
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Subsystem.sys_reset,(SLAVE)Sys_Clk.clk_in_reset) 1 0 1 NJ
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Subsystem.char_buffer_slave,(SLAVE)VGA_Char_Buffer.avalon_char_buffer_slave) 1 0 4 NJ 50 NJ 50 NJ 50 NJ
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Subsystem.vga_pll_ref_clk,(SLAVE)VGA_PLL.ref_clk) 1 0 5 NJ 330 NJ 330 NJ 330 NJ 330 NJ
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(MASTER)VGA_Pixel_RGB_Resampler.avalon_rgb_source,(SLAVE)VGA_Pixel_Scaler.avalon_scaler_sink) 1 3 1 N
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(MASTER)VGA_PLL.video_in_clk,(MASTER)VGA_Subsystem.vga_pll_d5m_clk) 1 5 3 NJ 370 NJ 370 NJ
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Subsystem.sys_clk,(SLAVE)Sys_Clk.clk_in) 1 0 1 NJ
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Alpha_Blender.avalon_background_sink,(MASTER)VGA_Pixel_Scaler.avalon_scaler_source) 1 4 1 1430
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Pixel_FIFO.avalon_dc_buffer_sink,(MASTER)VGA_Pixel_DMA.avalon_pixel_source) 1 1 7 440 100 NJ 100 NJ 190 NJ 220 NJ 110 NJ 130 2690
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Pixel_RGB_Resampler.avalon_rgb_sink,(MASTER)VGA_Pixel_FIFO.avalon_dc_buffer_source) 1 2 1 750
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(MASTER)VGA_Char_Buffer.avalon_char_source,(SLAVE)VGA_Alpha_Blender.avalon_foreground_sink) 1 4 1 1490
+preplace netloc FAN_OUT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Controller.clk,(SLAVE)VGA_Dual_Clock_FIFO.clock_stream_out,(MASTER)VGA_PLL.vga_clk) 1 5 2 1960 250 2290
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(MASTER)VGA_Alpha_Blender.avalon_blended_source,(SLAVE)VGA_Dual_Clock_FIFO.avalon_dc_buffer_sink) 1 5 1 1920
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Controller.external_interface,(SLAVE)VGA_Subsystem.vga) 1 0 7 NJ 310 NJ 310 NJ 310 NJ 290 NJ 270 NJ 270 NJ
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(MASTER)VGA_Subsystem.pixel_dma_master,(MASTER)VGA_Pixel_DMA.avalon_pixel_dma_master) 1 7 1 NJ
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Subsystem.pixel_dma_control_slave,(SLAVE)VGA_Pixel_DMA.avalon_control_slave) 1 0 7 NJ 420 NJ 420 NJ 420 NJ 420 NJ 420 NJ 420 NJ
+preplace netloc FAN_OUT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Pixel_RGB_Resampler.reset,(SLAVE)VGA_Dual_Clock_FIFO.reset_stream_in,(SLAVE)VGA_Pixel_FIFO.reset_stream_out,(SLAVE)VGA_Char_Buffer.reset,(MASTER)Sys_Clk.clk_reset,(SLAVE)VGA_Pixel_FIFO.reset_stream_in,(SLAVE)VGA_Pixel_Scaler.reset,(SLAVE)VGA_Alpha_Blender.reset,(SLAVE)VGA_Pixel_DMA.reset) 1 1 6 400 260 750 290 1070 170 1490 240 1900 90 NJ
+preplace netloc POINT_TO_POINT<net_container>VGA_Subsystem</net_container>(MASTER)VGA_Dual_Clock_FIFO.avalon_dc_buffer_source,(SLAVE)VGA_Controller.avalon_vga_sink) 1 6 1 2290
+preplace netloc EXPORT<net_container>VGA_Subsystem</net_container>(SLAVE)VGA_Subsystem.char_buffer_control_slave,(SLAVE)VGA_Char_Buffer.avalon_char_control_slave) 1 0 4 NJ 30 NJ 30 NJ 30 NJ
+levelinfo -pg 1 0 170 2840
+levelinfo -hier VGA_Subsystem 180 230 470 800 1120 1570 2010 2380 2710
