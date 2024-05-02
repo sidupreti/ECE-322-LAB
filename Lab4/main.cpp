@@ -470,7 +470,7 @@ void processTiles_weightStatinary(int numNeurons,
 
 
         // Read back the results from the output buffer
-        std::vector<float> outputs(numNeurons);
+        // std::vector<float> outputs(numNeurons);		// Already declared
         err = clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, sizeof(float) * numNeurons, outputs.data(), 0, NULL, NULL);
         checkError(err, "Failed to read output buffer");
 
