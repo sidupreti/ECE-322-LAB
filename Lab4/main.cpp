@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -377,16 +378,39 @@ void processTiles_weightStatinary(int numNeurons,
         
         //#TODO : create remaining required buffers
 
+        
+
+
+
+
+        
+        inputTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * inputSize, NULL, &err);
+        checkError(err, "Failed to create buffer for input tiles");
+
+        
+        weightsTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float) * numNeurons * inputTileSize, NULL, &err);
+        checkError(err, "Failed to create buffer for weights");
+
+        
+        outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * numNeurons, NULL, &err);
+        checkError(err, "Failed to create buffer for output");
+
+        clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
+        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
+        clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&outputBuffer);
+
+
+
         if(err != CL_SUCCESS){
         }else{
             printf("done creating buffer\n");
         }
 
 
-        float pattern = 0.0f; // The pattern to fill, here it's 1.0 for float
-        size_t pattern_size = sizeof(float); // Size of the pattern, here it's the size of a float
-        size_t offset = 0; // Start offset within the buffer
-        size_t size = numNeurons * sizeof(float); // Size of the buffer to fill
+        float pattern = 0.0f; 
+        size_t pattern_size = sizeof(float); 
+        size_t offset = 0; 
+        size_t size = numNeurons * sizeof(float); 
 
         //set output buffer to zeros, use this buffer to accumulate results for dot product
         err = clEnqueueFillBuffer(queue, outputBuffer, &pattern, pattern_size, offset, size, 0, NULL, NULL);
@@ -396,6 +420,11 @@ void processTiles_weightStatinary(int numNeurons,
     #if FPGA == 1    
         clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
         //#TODO : set remaining kernel arguments
+        clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
+        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
+        clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&outputBuffer);
+
+
     #endif
 
 
@@ -403,6 +432,22 @@ void processTiles_weightStatinary(int numNeurons,
 
     //For each kernel launch you write data to the buffers using a command similar to the following 
     // err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, weightsPerTile * sizeof(float), &hidden_layer1_weights[weightsStartIndex], 0, NULL, NULL);
+    // Write input data to the buffer
+    err = clEnqueueWriteBuffer(queue, inputTileBuffer, CL_TRUE, 0, sizeof(float) * inputSize, inputs.data(), 0, NULL, NULL);
+    checkError(err, "Failed to write to input tile buffer");
+
+    // Write weights data to the buffer
+    err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, sizeof(float) * numNeurons * inputTileSize, weights.data(), 0, NULL, NULL);
+    checkError(err, "Failed to write to weights buffer");
+
+    // Launch the kernel
+    size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
+    size_t local_work_size[] = {static_cast<size_t>(1)};
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+    checkError(err, "Failed to launch kernel");
+
+    // Ensure the command queue has completed all tasks
+    clFinish(queue);
 
     //#TODO: After writing buffers to each kernel launch kernel using the follwoing code
 
@@ -422,6 +467,18 @@ void processTiles_weightStatinary(int numNeurons,
     #if FPGA == 1
         clReleaseMemObject(inputTileBuffer);
         //#TODO: release remaining memory buffers
+
+
+        // Read back the results from the output buffer
+        std::vector<float> outputs(numNeurons);
+        err = clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, sizeof(float) * numNeurons, outputs.data(), 0, NULL, NULL);
+        checkError(err, "Failed to read output buffer");
+
+        // Release each buffer
+        clReleaseMemObject(inputTileBuffer);
+        clReleaseMemObject(weightsTileBuffer);
+        clReleaseMemObject(outputBuffer);
+
     #endif
 }
 #endif
@@ -448,6 +505,12 @@ void run() {
     printf("started running on fpga\n");
 
     //#TODO: similar to connecting computing each layer and connecting them in CPU code, implement same logic here but calling the FPGA functions
+
+    if (kernel) clReleaseKernel(kernel);
+if (program) clReleaseProgram(program);
+if (queue) clReleaseCommandQueue(queue);
+if (context) clReleaseContext(context);
+
 }
 #endif
 
@@ -455,7 +518,7 @@ void matrixMulCPU(
     std::vector<float>& input_tile,  // Tile of the Input vector
     std::vector<float>& weights_tile, // Tile of the Weights matrix
     int input_tile_size,                  // Size of the input tile
-    int output_neurons_tile_size,         // Size of the output tile (number of neurons in this tile)
+    int output_neurons_tile_size,         // Size of the output tile 
     std::vector<float>& output_tile                // Output vector tile
 ){
 
@@ -659,7 +722,5 @@ void cleanup() {
 
     // If you have other resources allocated, make sure to release them properly
 }
-
-
 
 
