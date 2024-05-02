@@ -506,10 +506,63 @@ void run() {
 
     //#TODO: similar to connecting computing each layer and connecting them in CPU code, implement same logic here but calling the FPGA functions
 
-    if (kernel) clReleaseKernel(kernel);
-if (program) clReleaseProgram(program);
-if (queue) clReleaseCommandQueue(queue);
-if (context) clReleaseContext(context);
+    hidden_layer1_out.resize(numNeurons * inputTileSize);
+    processTiles_weightStatinary(hidden_work_size,
+    inputSize, // Size of the input array
+    inputTileSize,  // Tile size of the Input vector          
+    hidden_layer1_weights, // Weights array
+    hidden_layer1_biases,  // biases array
+    image_data,  // inputs array 
+    hidden_layer1_out  // outputs array);
+    );
+
+    //printf("done first layer: %d\n",hidden_layer1_out.size());
+
+    std::cout << "Output of fc1 (before ReLU): ";
+
+    for(int i=0;i<10;i++){
+        std::cout << hidden_layer1_out[i] << " ";
+    }
+    std::cout << std::endl;
+
+    relu(hidden_layer1_out);
+
+    std::cout << "Output of fc1 (after ReLU): ";
+
+    for(int i=0;i<10;i++){
+        std::cout << hidden_layer1_out[i] << " ";
+    }
+    std::cout << std::endl;
+
+    output_layer_out.resize(numNeurons * inputTileSize);
+
+    processTiles_weightStatinary(output_work_size,
+    output_work_size, // Size of the input array
+    10,  // Tile size of the Input vector          
+    output_layer_weights, // Weights array
+    output_layer_biases,  // biases array
+    hidden_layer1_out,  // inputs array 
+    output_layer_out  // outputs array);
+    );
+
+
+    std::cout << "Output of fc2 (before LogSoftmax): "; 
+    for(int i=0;i<10;i++){
+        std::cout << output_layer_out[i] << " ";
+    }
+    std::cout << std::endl;
+
+    log_softmax(output_layer_out);
+
+
+    std::cout << "Output of fc2 (after LogSoftmax): "; 
+    for(int i=0;i<10;i++){
+        std::cout << output_layer_out[i] << " ";
+    }
+    std::cout << std::endl;
+
+    int Label = getMaxIn(output_layer_out);
+    printf("Predicted label:%d\n",Label);
 
 }
 #endif
