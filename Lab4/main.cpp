@@ -341,7 +341,7 @@ bool init_opencl() {
     cl_int err;
 
     // Create the kernels
-    kernel = clCreateKernel(program, "matrixMul", &status);
+    kernel = clCreateKernel(program, "hidden", &status);		// matrixMul
     checkError(status, "Failed to create cnn kernel");
 
 
@@ -612,6 +612,7 @@ std::vector<float> loadWeights(int weightsStartIndex,int numNeurons,int inputTil
 }
 
 
+#if FPGA == 0
 void processTiles_weightStatinary_CPU(
     int numNeurons,
     int inputSize, // Size of the input array
@@ -653,7 +654,9 @@ void processTiles_weightStatinary_CPU(
     } 
 
 }
+#endif
 
+#if FPGA == 0
 void run_cpu() {
     
 
@@ -731,6 +734,7 @@ void run_cpu() {
     printf("Predicted label:%d\n",Label);
 
 }
+#endif
 
 int getMaxIn(std::vector<float>& v){
     int maxIndex = std::distance(v.begin(), std::max_element(v.begin(), v.end()));
@@ -775,5 +779,4 @@ void cleanup() {
 
     // If you have other resources allocated, make sure to release them properly
 }
-
 
