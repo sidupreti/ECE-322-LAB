@@ -403,14 +403,10 @@ void processTiles_weightStatinary(int numNeurons,
 
 
     //#TODO: similar to weightstationary_cpu code implemnt the same logic with inner loop taken care by the parallel kernes
-    // For illustration purposes, let's assume these variables have been defined:
-// `weightsTileBuffer`: The buffer for weights tiles
-// `queue`: The OpenCL command queue
-// `weights`: Host-side vector containing weights data
-// `weightsStartIndex`: Starting index of the weights for the current tile
-// `weightsPerTile`: The number of weights in each tile
+    
 
-cl_int err;
+float weightsPerTile = 28;
+float weightsStartIndex = 0;
 
 err = clEnqueueWriteBuffer(queue,                             
     weightsTileBuffer,                 
@@ -446,18 +442,16 @@ checkError(err, "Failed to write weights tile buffer");
         //#TODO: release remaining memory buffers
 
         if (inputTileBuffer) {
-        status = clReleaseMemObject(inputTileBuffer);
-        checkError(status, "Failed to release inputTileBuffer");
+        clReleaseMemObject(inputTileBuffer);
     }
 
     if (weightsTileBuffer) {
-        status = clReleaseMemObject(weightsTileBuffer);
-        checkError(status, "Failed to release weightsTileBuffer");
+        clReleaseMemObject(weightsTileBuffer);
     }
 
     if (outputBuffer) {
-        status = clReleaseMemObject(outputBuffer);
-        checkError(status, "Failed to release outputBuffer");
+        clReleaseMemObject(outputBuffer);
+    }
     #endif
 }
 #endif
