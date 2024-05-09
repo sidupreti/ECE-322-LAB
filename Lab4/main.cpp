@@ -374,15 +374,36 @@ void processTiles_weightStatinary(int numNeurons,
 
     #if FPGA == 1
         weightsTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, currentTileSize * outputNeuronsTileSize * sizeof(float), NULL, &err);
-        inputTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, currentTileSize * sizeof(float), NULL, &err);
-        outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, outputNeuronsTileSize * sizeof(float), NULL, &err);
-
         
+        //#TODO : create remaining required buffers
+        
+        //Create a buffer for input data
+        inputTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * sizeof(float), NULL, &err);
+        checkError(err, "Failed to create inputTileBuffer");
+
+        //Create a buffer for weights data
+        weightsTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, numNeurons * inputTileSize * sizeof(float), NULL, &err);
+        checkError(err, "Failed to create weightsTileBuffer");
+
+        //Create a buffer for the output data
+        outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, numNeurons * sizeof(float), NULL, &err);
+        checkError(err, "Failed to create outputBuffer");
+        
+        //Writing input data to the inputTileBuffer
+        err = clEnqueueWriteBuffer(queue, inputTileBuffer, CL_TRUE, 0, inputSize * sizeof(float), inputs.data(), 0, NULL, NULL);
+        checkError(err, "Failed to write to inputTileBuffer");
+
+        //Writing weights data to the weightsTileBuffer
+        err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, numNeurons * inputTileSize * sizeof(float), weights.data(), 0, NULL, NULL);
+        checkError(err, "Failed to write to weightsTileBuffer");
+
+
 
         if(err != CL_SUCCESS){
         }else{
             printf("done creating buffer\n");
         }
+        
 
 
         float pattern = 0.0f; // The pattern to fill, here it's 1.0 for float
@@ -397,28 +418,25 @@ void processTiles_weightStatinary(int numNeurons,
 
     #if FPGA == 1    
         clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
-        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);  
-        clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&outputBuffer);
+        //#TODO : set remaining kernel arguments
+        
+        
+        
+        
+        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &inputTileBuffer);
+        checkError(err, "Failed to set input buffer argument");
+
+        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &weightsTileBuffer);
+        checkError(err, "Failed to set weights buffer argument");
+
+        err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &outputBuffer);
+        checkError(err, "Failed to set output buffer argument");
+
+        
     #endif
 
 
     //#TODO: similar to weightstationary_cpu code implemnt the same logic with inner loop taken care by the parallel kernes
-    
-
-float weightsPerTile = 28;
-float weightsStartIndex = 0;
-
-err = clEnqueueWriteBuffer(queue,                             
-    weightsTileBuffer,                 
-    CL_TRUE,                           
-    0,                                 
-    weightsPerTile * sizeof(float),    
-    &weights[weightsStartIndex],       
-    0,                                 
-    NULL,                             
-    NULL                               
-);
-checkError(err, "Failed to write weights tile buffer");
 
     //For each kernel launch you write data to the buffers using a command similar to the following 
     // err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, weightsPerTile * sizeof(float), &hidden_layer1_weights[weightsStartIndex], 0, NULL, NULL);
@@ -427,31 +445,26 @@ checkError(err, "Failed to write weights tile buffer");
 
     // global work size and local work sizes are the kernel dimensions, for this lab sizes as simple as the following is good
 
-    size_t global_work_size[] = {static_cast<size_t>(10)};
+    size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
     size_t local_work_size[] = {static_cast<size_t>(1)};
 
     // assuming you implemented a 1D kernel in OpenCL, if you implemented 2D please discuss with TA    
 
     err = clEnqueueNDRangeKernel(queue, kernel, 0, NULL, global_work_size, local_work_size, 1, NULL, NULL);
+    checkError(err, "Failed to launch the kernel");
 
-    clFinish(queue);    
+    // OpenCL kernels running on FPGA are not synchornous. You will synchronize your computations by waiting till the queue is finished by the following code    
+    clFinish(queue);
     
 
     #if FPGA == 1
-        clReleaseMemObject(inputTileBuffer);
         //#TODO: release remaining memory buffers
-
-        if (inputTileBuffer) {
+        
+        // Release all allocated memory buffers
         clReleaseMemObject(inputTileBuffer);
-    }
-
-    if (weightsTileBuffer) {
         clReleaseMemObject(weightsTileBuffer);
-    }
-
-    if (outputBuffer) {
         clReleaseMemObject(outputBuffer);
-    }
+
     #endif
 }
 #endif
@@ -461,8 +474,41 @@ checkError(err, "Failed to write weights tile buffer");
 
 void run() {
     cl_int status;
+    
+    
+    std::vector<float> hidden_layer1_out(numNeurons);
+    std::vector<float> output_layer_out(numNeurons);
+    
+    processTiles_weightStatinary(
+        numNeurons,
+        inputSize,
+        inputTileSize,
+        hidden_layer1_weights,
+        hidden_layer1_biases,
+        image_data,
+        hidden_layer1_out
+    );
+
+
 
     // hidden 
+    //Apply ReLU to the output of the hidden layer
+    relu(hidden_layer1_out);
+    
+    // Process the output layer
+    processTiles_weightStatinary(
+        numNeurons,           // Number of neurons in the output layer
+        numNeurons,           // Size of the input (hidden layer size)
+        10,                   // Tile size (number of output classes)
+        output_layer_weights, // Weights of the output layer
+        output_layer_biases,  // Biases of the output layer
+        hidden_layer1_out,    // Inputs from the hidden layer output
+        output_layer_out      // Outputs for the final prediction
+    );
+    //Normalize the final output probabilities
+    log_softmax(output_layer_out);
+
+
     const unsigned hiddenLayerIndex = 0;
     const unsigned outputLayerIndex = 1;
 
@@ -476,56 +522,12 @@ void run() {
 
 
     printf("started running on fpga\n");
-    {
-        err = clEnqueueWriteBuffer(queue, inputTileBuffer, CL_TRUE, 0, inputTileSize * sizeof(float), input_tile_data, 0, NULL, NULL);
-        err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, hiddenWeightsPerTile * sizeof(float), hidden_weights_tile_data, 0, NULL, NULL);
-        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
-        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
-        err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&outputBuffer);
-        size_t global_work_size[] = {hidden_work_size};
-    size_t local_work_size[] = {1};
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-        clFinish(queue);
+    // Find the predicted label with the maximum score
+    int label = getMaxIn(output_layer_out);
+    printf("Predicted label: %d\n", label);
 
-    }
-void run_fpga_layers() {
-    cl_int err;
 
-   
-    size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
-    size_t local_work_size[] = {1};
-
-    //Layer 1
-    {
-        //Write input image data to the input buffer
-        err = clEnqueueWriteBuffer(queue, inputTileBuffer, CL_TRUE, 0, inputSize * sizeof(float), image_data.data(), 0, NULL, NULL);
-        checkError(err, "Failed to write input image buffer");
-
-        //Write weights of the hidden layer to the weights buffer
-        err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, hiddenLayerWeightsSize * sizeof(float), hidden_layer1_weights.data(), 0, NULL, NULL);
-        checkError(err, "Failed to write hidden layer weights buffer");
-
-        // Set kernel arguments for the hidden layer
-        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
-        checkError(err, "Failed to set input buffer argument");
-        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
-        checkError(err, "Failed to set weights buffer argument");
-        err = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&outputBuffer);
-        checkError(err, "Failed to set output buffer argument");
-
-        //Launch kernel for the hidden layer
-        err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-        checkError(err, "Failed to enqueue hidden layer kernel");
-
-        clFinish(queue);
-    }
-
-    //Layer 2: 
-    {
-
-        //Write weights for the output layer
-        err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, outputLayerWeightsSize * sizeof(float), output_layer_weights.data(), 0, NULL, NULL);
-
+    //#TODO: similar to connecting computing each layer and connecting them in CPU code, implement same logic here but calling the FPGA functions
 }
 #endif
 
