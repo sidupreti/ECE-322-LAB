@@ -469,7 +469,7 @@ void processTiles_weightStatinary(int numNeurons,
 
     #endif
 
-    clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, NUM_NEURONS * sizeof(float), output.data(), 0, NULL, NULL);
+    clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, 10 * sizeof(float), outputs.data(), 0, NULL, NULL);
     clFinish(queue);
 
     // Adding biases to outputs
