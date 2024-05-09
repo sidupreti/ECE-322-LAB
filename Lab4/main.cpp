@@ -419,18 +419,20 @@ void processTiles_weightStatinary(int numNeurons,
     #if FPGA == 1    
         clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
         //#TODO : set remaining kernel arguments
-        
-        
-        
-        
-        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &inputTileBuffer);
-        checkError(err, "Failed to set input buffer argument");
+        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
+        clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&inputTileSize);
+        clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&outputNeuronsTileSize);
+        clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&output_tile);
 
-        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &weightsTileBuffer);
-        checkError(err, "Failed to set weights buffer argument");
 
-        err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &outputBuffer);
-        checkError(err, "Failed to set output buffer argument");
+
+
+
+        
+        
+        
+        
+      
 
         
     #endif
