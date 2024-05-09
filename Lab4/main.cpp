@@ -499,15 +499,23 @@ void run() {
         hidden_layer1_out
     );
 
+    std::cout << "Output of fc1 (before ReLU): ";
 
-    for (int i=0; i<10; i++) {
-        printf("%f\n", hidden_layer1_out[0]);
+    for(int i=0;i<10;i++){
+        std::cout << hidden_layer1_out[i] << " ";
     }
-
-
+    std::cout << std::endl;
+    
     // hidden 
     //Apply ReLU to the output of the hidden layer
     relu(hidden_layer1_out);
+
+    std::cout << "Output of fc1 (after ReLU): ";
+
+    for(int i=0;i<10;i++){
+        std::cout << hidden_layer1_out[i] << " ";
+    }
+    std::cout << std::endl;
     
     // Process the output layer
     processTiles_weightStatinary(
@@ -519,9 +527,21 @@ void run() {
         hidden_layer1_out,    // Inputs from the hidden layer output
         output_layer_out      // Outputs for the final prediction
     );
+
+    std::cout << "Output of fc2 (before LogSoftmax): "; 
+    for(int i=0;i<10;i++){
+        std::cout << output_layer_out[i] << " ";
+    }
+    std::cout << std::endl;
+    
     //Normalize the final output probabilities
     log_softmax(output_layer_out);
 
+    std::cout << "Output of fc2 (after LogSoftmax): "; 
+    for(int i=0;i<10;i++){
+        std::cout << output_layer_out[i] << " ";
+    }
+    std::cout << std::endl;
 
     const unsigned hiddenLayerIndex = 0;
     const unsigned outputLayerIndex = 1;
