@@ -365,12 +365,31 @@ void processTiles_weightStatinary(int numNeurons,
     std::vector<float>& outputs  // outputs array
     ) {
 
+
+    
     printf("in the weight stationary function\n");
+
+
+    int numTiles = inputSize / inputTileSize; // Ensure this division is an integer
+    int totalWeights = inputSize * 10;
+    int weightsPerTile = 10*inputTileSize; // Assuming an even distribution of neurons per tile
+
+    for (int tileIndex = 0; tileIndex < numTiles; ++tileIndex) {
+        
+        int weightsStartIndex = tileIndex * inputTileSize; 
+        std::vector<float> temp_wts;
+        temp_wts.resize(numNeurons * inputTileSize);
+        loadWeights(weightsStartIndex,numNeurons,inputTileSize,inputSize,weights,temp_wts);
+
+        std::vector<float> inputSlice(std::next(inputs.begin(), weightsStartIndex), std::next(inputs.begin(), weightsStartIndex+inputTileSize));
+    }
+     for(int i=0;i<numNeurons;i++){
+        outputs[i] += biases[i];
+     }
 
     cl_int err;
 
-    int outputNeuronsTileSize = 10;
-    int currentTileSize = inputTileSize;
+   
 
     #if FPGA == 1
         weightsTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, currentTileSize * outputNeuronsTileSize * sizeof(float), NULL, &err);
