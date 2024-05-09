@@ -422,7 +422,7 @@ void processTiles_weightStatinary(int numNeurons,
         clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
         clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&inputTileSize);
         clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&outputNeuronsTileSize);
-        clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&output_tile);
+        clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&outputBuffer);
 
 
 
