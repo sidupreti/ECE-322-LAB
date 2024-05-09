@@ -469,6 +469,9 @@ void processTiles_weightStatinary(int numNeurons,
 
     #endif
 
+    clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, NUM_NEURONS * sizeof(float), output.data(), 0, NULL, NULL);
+    clFinish(queue);
+
     // Adding biases to outputs
     for (int i=0; i<numNeurons; i++) {
         outputs[i] += biases[i];
@@ -496,6 +499,10 @@ void run() {
         hidden_layer1_out
     );
 
+
+    for (int i=0; i<10; i++) {
+        printf("%f\n", hidden_layer1_out);
+    }
 
 
     // hidden 
