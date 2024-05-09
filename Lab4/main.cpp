@@ -452,7 +452,7 @@ void processTiles_weightStatinary(int numNeurons,
 
     // assuming you implemented a 1D kernel in OpenCL, if you implemented 2D please discuss with TA    
 
-    err = clEnqueueNDRangeKernel(queue, kernel, 0, NULL, global_work_size, local_work_size, 1, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
     checkError(err, "Failed to launch the kernel");
 
     // OpenCL kernels running on FPGA are not synchornous. You will synchronize your computations by waiting till the queue is finished by the following code    
