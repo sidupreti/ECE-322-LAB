@@ -468,6 +468,11 @@ void processTiles_weightStatinary(int numNeurons,
         clReleaseMemObject(outputBuffer);
 
     #endif
+
+    // Adding biases to outputs
+    for (int i=0; i<numNeurons; i++) {
+        outputs[i] += biases[i];
+    }
 }
 #endif
 
