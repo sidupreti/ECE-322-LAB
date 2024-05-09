@@ -501,7 +501,7 @@ void run() {
 
 
     for (int i=0; i<10; i++) {
-        printf("%f\n", hidden_layer1_out);
+        printf("%f\n", hidden_layer1_out[0]);
     }
 
 
