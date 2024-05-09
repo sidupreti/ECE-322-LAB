@@ -340,7 +340,7 @@ bool init_opencl() {
     cl_int err;
 
     // Create the kernels
-    kernel = clCreateKernel(program, "matrixMul", &status);
+    kernel = clCreateKernel(program, "hidden", &status);
     checkError(status, "Failed to create cnn kernel");
 
 
