@@ -357,41 +357,41 @@ bool init_opencl() {
 
 #if FPGA == 1
 void processTiles_weightStatinary(int numNeurons,
-    int inputSize, // Size of the input array
-    int inputTileSize,  // Tile size of the Input vector
-    std::vector<float>& weights, // Weights array
-    std::vector<float>& biases,  // biases array
-    std::vector<float>& inputs,  // inputs array
-    std::vector<float>& outputs  // outputs array
+    int inputSize, 
+    int inputTileSize,  
+    std::vector<float>& weights, 
+    std::vector<float>& biases,  
+    std::vector<float>& inputs,  
+    std::vector<float>& outputs  
     ) {
     
     printf("In the weight stationary function\n");
 
-    int numTiles = inputSize / inputTileSize; // Ensure this division is an integer
+    int numTiles = inputSize / inputTileSize; 
     cl_int err;
 
-    // Create buffers
+    //Create buffers
     cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * sizeof(float), NULL, &err);
     cl_mem weightsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * numNeurons * sizeof(float), NULL, &err);
     cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, numNeurons * sizeof(float), NULL, &err);
 
-    // Transfer data to FPGA
-    err = clEnqueueWriteBuffer(queue, inputBuffer, CL_TRUE, 0, inputSize * sizeof(float), inputs.data(), 0, NULL, NULL);
-    err = clEnqueueWriteBuffer(queue, weightsBuffer, CL_TRUE, 0, inputSize * numNeurons * sizeof(float), weights.data(), 0, NULL, NULL);
+    //Transfer data to FPGA
+     clEnqueueWriteBuffer(queue, inputBuffer, CL_TRUE, 0, inputSize * sizeof(float), inputs.data(), 0, NULL, NULL);
+ clEnqueueWriteBuffer(queue, weightsBuffer, CL_TRUE, 0, inputSize * numNeurons * sizeof(float), weights.data(), 0, NULL, NULL);
 
-    // Set kernel arguments
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), &inputBuffer);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), &weightsBuffer);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), &outputBuffer);
-    clSetKernelArg(kernel, 3, sizeof(int), &inputTileSize);
+    //Set kernel arguments
+           clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
+        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
+        clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&inputTileSize);
+        clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&outputNeuronsTileSize);
+        clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&outputBuffer);
 
-    // Execute the kernel
     size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
-    size_t local_work_size[] = {1};  // Adjust based on your OpenCL kernel design
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+    size_t local_work_size[] = {1};  
+clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
 
-    // Read back the result
-    err = clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, numNeurons * sizeof(float), outputs.data(), 0, NULL, NULL);
+    
+  clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, numNeurons * sizeof(float), outputs.data(), 0, NULL, NULL);
 
     // Accumulate biases
     for (int i = 0; i < numNeurons; i++) {
