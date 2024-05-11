@@ -357,41 +357,55 @@ bool init_opencl() {
 
 #if FPGA == 1
 void processTiles_weightStatinary(int numNeurons,
-    int inputSize, 
-    int inputTileSize,  
-    std::vector<float>& weights, 
-    std::vector<float>& biases,  
-    std::vector<float>& inputs,  
-    std::vector<float>& outputs  
+    int inputSize, // Size of the input array
+    int inputTileSize, // Tile size of the Input vector
+    std::vector<float>& weights, // Weights array
+    std::vector<float>& biases, // biases array
+    std::vector<float>& inputs, // inputs array
+    std::vector<float>& outputs // outputs array
     ) {
     
-    printf("In the weight stationary function\n");
+    printf("In the weight stationary function on FPGA\n");
 
-    int numTiles = inputSize / inputTileSize; 
     cl_int err;
+    int numTiles = inputSize / inputTileSize;
 
-    //Create buffers
+    // Create buffers
     cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * sizeof(float), NULL, &err);
     cl_mem weightsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * numNeurons * sizeof(float), NULL, &err);
     cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, numNeurons * sizeof(float), NULL, &err);
 
-    //Transfer data to FPGA
-     clEnqueueWriteBuffer(queue, inputBuffer, CL_TRUE, 0, inputSize * sizeof(float), inputs.data(), 0, NULL, NULL);
- clEnqueueWriteBuffer(queue, weightsBuffer, CL_TRUE, 0, inputSize * numNeurons * sizeof(float), weights.data(), 0, NULL, NULL);
+    // Initialize output buffer to zero
+    float zero = 0.0;
+    clEnqueueFillBuffer(queue, outputBuffer, &zero, sizeof(float), 0, numNeurons * sizeof(float), 0, NULL, NULL);
 
-    //Set kernel arguments
-           clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
-        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
-        clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&inputTileSize);
-        clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&outputNeuronsTileSize);
-        clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&outputBuffer);
+    for (int tileIndex = 0; tileIndex < numTiles; ++tileIndex) {
+        int inputStartIndex = tileIndex * inputTileSize;
+        int currentTileSize = (tileIndex < numTiles - 1) ? inputTileSize : (inputSize - inputStartIndex);
 
-    size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
-    size_t local_work_size[] = {1};  
-clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+        // Set kernel arguments
+        clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
+        clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&weightsBuffer);
+        clSetKernelArg(kernel, 2, sizeof(int), &currentTileSize);
+        clSetKernelArg(kernel, 3, sizeof(int), &numNeurons);
+        clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&outputBuffer);
 
-    
-  clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, numNeurons * sizeof(float), outputs.data(), 0, NULL, NULL);
+        // Enqueue buffer writes
+        clEnqueueWriteBuffer(queue, inputBuffer, CL_TRUE, inputStartIndex * sizeof(float), currentTileSize * sizeof(float), &inputs[inputStartIndex], 0, NULL, NULL);
+        clEnqueueWriteBuffer(queue, weightsBuffer, CL_TRUE, 0, numNeurons * inputSize * sizeof(float), weights.data(), 0, NULL, NULL);
+
+        size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
+        size_t local_work_size[] = {1}; // Can be tuned based on the device capabilities
+
+        // Execute the kernel
+        clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+
+        // Wait for the queue to finish processing to ensure data integrity before the next tile starts
+        clFinish(queue);
+    }
+
+    // Read back the accumulated results
+    clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, numNeurons * sizeof(float), outputs.data(), 0, NULL, NULL);
 
     // Accumulate biases
     for (int i = 0; i < numNeurons; i++) {
@@ -404,6 +418,7 @@ clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size
     clReleaseMemObject(outputBuffer);
 }
 #endif
+
 
     // cl_int err;
 
