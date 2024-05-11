@@ -358,38 +358,52 @@ bool init_opencl() {
 #if FPGA == 1
 void processTiles_weightStatinary(int numNeurons,
     int inputSize, // Size of the input array
-    int inputTileSize,  // Tile size of the Input vector          
+    int inputTileSize,  // Tile size of the Input vector
     std::vector<float>& weights, // Weights array
     std::vector<float>& biases,  // biases array
-    std::vector<float>& inputs,  // inputs array 
+    std::vector<float>& inputs,  // inputs array
     std::vector<float>& outputs  // outputs array
     ) {
-
-
     
-    printf("in the weight stationary function\n");
-
+    printf("In the weight stationary function\n");
 
     int numTiles = inputSize / inputTileSize; // Ensure this division is an integer
-    int totalWeights = inputSize * 10;
-    int weightsPerTile = 10*inputTileSize; // Assuming an even distribution of neurons per tile
+    cl_int err;
 
-    for (int tileIndex = 0; tileIndex < numTiles; ++tileIndex) {
-        
-        int weightsStartIndex = tileIndex * inputTileSize; 
-        std::vector<float> temp_wts;
-        temp_wts.resize(numNeurons * inputTileSize);
-        loadWeights(weightsStartIndex,numNeurons,inputTileSize,inputSize,weights,temp_wts);
+    // Create buffers
+    cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * sizeof(float), NULL, &err);
+    cl_mem weightsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * numNeurons * sizeof(float), NULL, &err);
+    cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, numNeurons * sizeof(float), NULL, &err);
 
-        std::vector<float> inputSlice(std::next(inputs.begin(), weightsStartIndex), std::next(inputs.begin(), weightsStartIndex+inputTileSize));
+    // Transfer data to FPGA
+    err = clEnqueueWriteBuffer(queue, inputBuffer, CL_TRUE, 0, inputSize * sizeof(float), inputs.data(), 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue, weightsBuffer, CL_TRUE, 0, inputSize * numNeurons * sizeof(float), weights.data(), 0, NULL, NULL);
 
-        // REPLACE MATRIXMULCPU HERE
-        
+    // Set kernel arguments
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), &inputBuffer);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), &weightsBuffer);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), &outputBuffer);
+    clSetKernelArg(kernel, 3, sizeof(int), &inputTileSize);
+
+    // Execute the kernel
+    size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
+    size_t local_work_size[] = {1};  // Adjust based on your OpenCL kernel design
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
+
+    // Read back the result
+    err = clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, numNeurons * sizeof(float), outputs.data(), 0, NULL, NULL);
+
+    // Accumulate biases
+    for (int i = 0; i < numNeurons; i++) {
+        outputs[i] += biases[i];
     }
-    for(int i=0;i<numNeurons;i++){
-       outputs[i] += biases[i];
-    }
+
+    // Release resources
+    clReleaseMemObject(inputBuffer);
+    clReleaseMemObject(weightsBuffer);
+    clReleaseMemObject(outputBuffer);
 }
+#endif
 
     // cl_int err;
 
