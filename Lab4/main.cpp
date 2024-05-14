@@ -517,8 +517,8 @@ void processTiles_weightStatinary(int numNeurons,
     // for (int i=0; i<numNeurons; i++) {
     //     outputs[i] += biases[i];
     // }
-}
-#endif
+
+// #endif
 
 
 
