@@ -20,6 +20,6 @@ __kernel void hidden(
         }
 
         // Store the computed value in  output vector 
-        output_tile[neuron_id] = sum;
+        output_tile[neuron_id] += sum;
     }
 }
