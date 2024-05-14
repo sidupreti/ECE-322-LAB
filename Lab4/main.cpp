@@ -177,21 +177,16 @@ int main(int argc, char **argv) {
 
 
 
-void setupDataAndModels(){
+void setupDataAndModels() {
     const char* filename = "first_image_mnist.bmp";
     int width = 0;
     int height = 0;
 
     unsigned char* pre_image_data = loadBMPGrayscale(filename, &width, &height);
     flipImageVertically(pre_image_data, width, height);
+    normalizeImage(pre_image_data, width * height, image_data);
 
-    normalizeImage(pre_image_data, width*height, image_data);
-    
-    printf("done loading image:%d\n",width*height);
-
-
-    if (!loadModelParameters(layer1_weightsPath,layer1_biasesPath,hidden_layer1_weights,hidden_layer1_biases)) {
-
+    if (!loadModelParameters(layer1_weightsPath, layer1_biasesPath, hidden_layer1_weights, hidden_layer1_biases)) {
         std::cerr << "Failed to load model layer 1 parameters." << std::endl;
         #if FPGA == 1
             cleanup();
@@ -199,7 +194,7 @@ void setupDataAndModels(){
         return;
     }
 
-    if (!loadModelParameters(output_weightsPath,output_biasesPath,output_layer_weights,output_layer_biases)) {
+    if (!loadModelParameters(output_weightsPath, output_biasesPath, output_layer_weights, output_layer_biases)) {
         std::cerr << "Failed to load model output layer parameters." << std::endl;
         #if FPGA == 1
             cleanup();
@@ -207,12 +202,25 @@ void setupDataAndModels(){
         return;
     }
 
-    printf("loaded model parameters\n");
-
-
-
+    // Print weights and biases to verify
+    std::cout << "Layer 1 Weights: ";
+    for (const auto& weight : hidden_layer1_weights) {
+        std::cout << weight << " ";
+    }
+    std::cout << "\nLayer 1 Biases: ";
+    for (const auto& bias : hidden_layer1_biases) {
+        std::cout << bias << " ";
+    }
+    std::cout << "\nOutput Layer Weights: ";
+    for (const auto& weight : output_layer_weights) {
+        std::cout << weight << " ";
+    }
+    std::cout << "\nOutput Layer Biases: ";
+    for (const auto& bias : output_layer_biases) {
+        std::cout << bias << " ";
+    }
+    std::cout << std::endl;
 }
-
 
 void log_softmax(std::vector<float>& v) {
 
