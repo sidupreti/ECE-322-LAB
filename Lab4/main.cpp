@@ -305,16 +305,13 @@ bool loadModelParameters(const std::string& weightsPath, const std::string& bias
 bool init_opencl() {
   cl_int status;
 
-    // Start everything at NULL to help identify errors.
     kernel = NULL;
     queue = NULL;
     
-    // Locate files via. relative paths.
     if(!setCwdToExeDir()) {
         cleanup();
     }
 
-    // Get the OpenCL platform.
     platform = findPlatform("Intel(R) FPGA");
     if (platform == NULL) {
         cleanup();
@@ -365,12 +362,12 @@ bool init_opencl() {
 
 #if FPGA == 1
 void processTiles_weightStatinary(int numNeurons,
-    int inputSize, // Size of the input array
-    int inputTileSize, // Tile size of the Input vector
-    std::vector<float>& weights, // Weights array
-    std::vector<float>& biases, // biases array
-    std::vector<float>& inputs, // inputs array
-    std::vector<float>& outputs // outputs array
+    int inputSize, //Size of the input array
+    int inputTileSize, //Tile size of the Input vector
+    std::vector<float>& weights, //Weights array
+    std::vector<float>& biases, //biases array
+    std::vector<float>& inputs, //inputs array
+    std::vector<float>& outputs //outputs array
     ) {
     
     printf("In the weight stationary function on FPGA\n");
@@ -378,12 +375,12 @@ void processTiles_weightStatinary(int numNeurons,
     cl_int err;
     int numTiles = inputSize / inputTileSize;
 
-    // Create buffers
+    //Create buffers
     cl_mem inputBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * sizeof(float), NULL, &err);
     cl_mem weightsBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * numNeurons * sizeof(float), NULL, &err);
     cl_mem outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, numNeurons * sizeof(float), NULL, &err);
 
-    // Initialize output buffer to zero
+    //Initialize output buffer to zero
     float zero = 0.0;
     clEnqueueFillBuffer(queue, outputBuffer, &zero, sizeof(float), 0, numNeurons * sizeof(float), 0, NULL, NULL);
 
@@ -391,36 +388,34 @@ void processTiles_weightStatinary(int numNeurons,
         int inputStartIndex = tileIndex * inputTileSize;
         int currentTileSize = (tileIndex < numTiles - 1) ? inputTileSize : (inputSize - inputStartIndex);
 
-        // Set kernel arguments
+        //Set kernel arguments
         clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inputBuffer);
         clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&weightsBuffer);
         clSetKernelArg(kernel, 2, sizeof(int), &currentTileSize);
         clSetKernelArg(kernel, 3, sizeof(int), &numNeurons);
         clSetKernelArg(kernel, 4, sizeof(cl_mem), (void *)&outputBuffer);
 
-        // Enqueue buffer writes
+        //Enqueue buffer writes
         clEnqueueWriteBuffer(queue, inputBuffer, CL_TRUE, inputStartIndex * sizeof(float), currentTileSize * sizeof(float), &inputs[inputStartIndex], 0, NULL, NULL);
         clEnqueueWriteBuffer(queue, weightsBuffer, CL_TRUE, 0, numNeurons * inputSize * sizeof(float), weights.data(), 0, NULL, NULL);
 
         size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
         size_t local_work_size[] = {1}; // Can be tuned based on the device capabilities
 
-        // Execute the kernel
+        //Execute the kernel
         clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
 
-        // Wait for the queue to finish processing to ensure data integrity before the next tile starts
         clFinish(queue);
     }
 
     // Read back the accumulated results
     clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, numNeurons * sizeof(float), outputs.data(), 0, NULL, NULL);
 
-    // Accumulate biases
+    //Accumulate biases
     for (int i = 0; i < numNeurons; i++) {
         outputs[i] += biases[i];
     }
 
-    // Release resources
     clReleaseMemObject(inputBuffer);
     clReleaseMemObject(weightsBuffer);
     clReleaseMemObject(outputBuffer);
@@ -428,105 +423,7 @@ void processTiles_weightStatinary(int numNeurons,
 #endif
 
 
-    // cl_int err;
-
-   
-
-    // #if FPGA == 1
-    //     weightsTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, currentTileSize * outputNeuronsTileSize * sizeof(float), NULL, &err);
-        
-    //     //#TODO : create remaining required buffers
-        
-    //     //Create a buffer for input data
-    //     inputTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, inputSize * sizeof(float), NULL, &err);
-    //     checkError(err, "Failed to create inputTileBuffer");
-
-    //     //Create a buffer for weights data
-    //     weightsTileBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, numNeurons * inputTileSize * sizeof(float), NULL, &err);
-    //     checkError(err, "Failed to create weightsTileBuffer");
-
-    //     //Create a buffer for the output data
-    //     outputBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, numNeurons * sizeof(float), NULL, &err);
-    //     checkError(err, "Failed to create outputBuffer");
-        
-    //     //Writing input data to the inputTileBuffer
-    //     err = clEnqueueWriteBuffer(queue, inputTileBuffer, CL_TRUE, 0, inputSize * sizeof(float), inputs.data(), 0, NULL, NULL);
-    //     checkError(err, "Failed to write to inputTileBuffer");
-
-    //     //Writing weights data to the weightsTileBuffer
-    //     err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, numNeurons * inputTileSize * sizeof(float), weights.data(), 0, NULL, NULL);
-    //     checkError(err, "Failed to write to weightsTileBuffer");
-
-
-
-    //     if(err != CL_SUCCESS){
-    //     }else{
-    //         printf("done creating buffer\n");
-    //     }
-        
-
-
-    //     float pattern = 0.0f; // The pattern to fill, here it's 1.0 for float
-    //     size_t pattern_size = sizeof(float); // Size of the pattern, here it's the size of a float
-    //     size_t offset = 0; // Start offset within the buffer
-    //     size_t size = numNeurons * sizeof(float); // Size of the buffer to fill
-
-    //     //set output buffer to zeros, use this buffer to accumulate results for dot product
-    //     err = clEnqueueFillBuffer(queue, outputBuffer, &pattern, pattern_size, offset, size, 0, NULL, NULL);
-    // #else
-    // #endif
-
-    // #if FPGA == 1    
-    //     clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&inputTileBuffer);
-    //     //#TODO : set remaining kernel arguments
-    //     clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&weightsTileBuffer);
-    //     clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&inputTileSize);
-    //     clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&outputNeuronsTileSize);
-    //     clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&outputBuffer);
-        
-    // #endif
-
-
-    // //#TODO: similar to weightstationary_cpu code implemnt the same logic with inner loop taken care by the parallel kernes
-
-    // //For each kernel launch you write data to the buffers using a command similar to the following 
-    // // err = clEnqueueWriteBuffer(queue, weightsTileBuffer, CL_TRUE, 0, weightsPerTile * sizeof(float), &hidden_layer1_weights[weightsStartIndex], 0, NULL, NULL);
-
-    // //#TODO: After writing buffers to each kernel launch kernel using the follwoing code
-
-    // // global work size and local work sizes are the kernel dimensions, for this lab sizes as simple as the following is good
-
-    // size_t global_work_size[] = {static_cast<size_t>(numNeurons)};
-    // size_t local_work_size[] = {static_cast<size_t>(1)};
-
-    // // assuming you implemented a 1D kernel in OpenCL, if you implemented 2D please discuss with TA    
-
-    // err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global_work_size, local_work_size, 0, NULL, NULL);
-    // checkError(err, "Failed to launch the kernel");
-
-    // // OpenCL kernels running on FPGA are not synchornous. You will synchronize your computations by waiting till the queue is finished by the following code    
-    // clFinish(queue);
     
-
-    // #if FPGA == 1
-    //     //#TODO: release remaining memory buffers
-        
-    //     // Release all allocated memory buffers
-    //     clReleaseMemObject(inputTileBuffer);
-    //     clReleaseMemObject(weightsTileBuffer);
-    //     clReleaseMemObject(outputBuffer);
-
-    // #endif
-
-    // clEnqueueReadBuffer(queue, outputBuffer, CL_TRUE, 0, 10 * sizeof(float), outputs.data(), 0, NULL, NULL);
-    // clFinish(queue);
-
-    // // Adding biases to outputs
-    // for (int i=0; i<numNeurons; i++) {
-    //     outputs[i] += biases[i];
-    // }
-
-// #endif
 
 
 
@@ -568,13 +465,13 @@ void run() {
     
     // Process the output layer
     processTiles_weightStatinary(
-        numNeurons,           // Number of neurons in the output layer
-        numNeurons,           // Size of the input (hidden layer size)
-        10,                   // Tile size (number of output classes)
-        output_layer_weights, // Weights of the output layer
-        output_layer_biases,  // Biases of the output layer
-        hidden_layer1_out,    // Inputs from the hidden layer output
-        output_layer_out      // Outputs for the final prediction
+        numNeurons,           
+        numNeurons,           
+        10,                   
+        output_layer_weights, 
+        output_layer_biases,  
+        hidden_layer1_out,    
+        output_layer_out      
     );
 
     std::cout << "Output of fc2 (before LogSoftmax): "; 
@@ -596,9 +493,9 @@ void run() {
     const unsigned outputLayerIndex = 1;
 
     size_t hidden_weights_offset = 0; // Starting at the beginning for the hidden layer
-    size_t output_weights_offset = 784 * 10; // Adjust based on your buffer organization
+    size_t output_weights_offset = 784 * 10; 
     size_t hidden_biases_offset = 0;
-    size_t output_biases_offset = 10; // Assuming biases are also concatenated
+    size_t output_biases_offset = 10; 
 
     size_t hidden_work_size = {10};
     size_t output_work_size = {10};
@@ -610,7 +507,6 @@ void run() {
     printf("Predicted label: %d\n", label);
 
 
-    //#TODO: similar to connecting computing each layer and connecting them in CPU code, implement same logic here but calling the FPGA functions
 }
 #endif
 
